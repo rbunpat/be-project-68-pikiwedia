@@ -25,7 +25,8 @@ const CONFIG = {
     reservations: {
         count: 20,              // number of reservations to create
         daysAhead: 30,          // max days from today for a reserveDate
-        daysBack: 10            // max days before today for a reserveDate
+        daysBack: 10,           // max days before today for a reserveDate
+        ratedRatio: 0.6         // fraction of reservations that are pre-rated (0–1)
     },
     clearExisting: true         // drop all documents before inserting new ones
 };
@@ -107,25 +108,32 @@ function buildMassages(count) {
             tel: generateTel(),
             price: faker.number.int({ min: 200, max: 3000 }),
             ratingSum: 0,
-            userRatingCount: 0
+            userRatingCount: 0,
+            averageRating: 0
         };
     });
 }
 
-/** Build an array of reservation objects referencing inserted users & massages. */
+/** Build an array of reservation objects referencing inserted users & massages.
+ *  A random subset (ratedRatio) will be pre-rated with a random integer 1–5.
+ */
 function buildReservations(users, massages, count) {
     const now = new Date();
-    const { daysAhead, daysBack } = CONFIG.reservations;
+    const { daysAhead, daysBack, ratedRatio } = CONFIG.reservations;
 
     return Array.from({ length: count }, () => {
         const offsetDays = faker.number.int({ min: -daysBack, max: daysAhead });
         const reserveDate = new Date(now);
         reserveDate.setDate(reserveDate.getDate() + offsetDays);
 
+        const isRated = Math.random() < ratedRatio;
+        const rating  = isRated ? faker.number.int({ min: 1, max: 5 }) : undefined;
+
         return {
             reserveDate,
-            user: pick(users)._id,
-            Massage: pick(massages)._id  // capital M — matches ReservationSchema
+            user:    pick(users)._id,
+            Massage: pick(massages)._id,  // capital M — matches ReservationSchema
+            ...(isRated && { rating, isRated: true })
         };
     });
 }
@@ -177,14 +185,39 @@ async function main() {
         CONFIG.reservations.count
     );
     const insertedReservations = await Reservation.insertMany(reservationDocs);
-    console.log(`  Inserted ${insertedReservations.length} reservations`);
+    const ratedCount = reservationDocs.filter(r => r.isRated).length;
+    console.log(`  Inserted ${insertedReservations.length} reservations (${ratedCount} pre-rated)`);
+
+    // ── Back-fill massage rating stats ─────────────────────────────────────
+    console.log('\nBack-filling massage rating stats...');
+
+    // Aggregate per-massage rating totals from the reservation docs
+    const ratingMap = {};
+    reservationDocs.forEach(r => {
+        if (!r.isRated) return;
+        const id = r.Massage.toString();
+        if (!ratingMap[id]) ratingMap[id] = { sum: 0, count: 0 };
+        ratingMap[id].sum   += r.rating;
+        ratingMap[id].count += 1;
+    });
+
+    await Promise.all(
+        Object.entries(ratingMap).map(([massageId, { sum, count }]) =>
+            Massage.findByIdAndUpdate(massageId, {
+                ratingSum:       sum,
+                userRatingCount: count,
+                averageRating:   sum / count
+            })
+        )
+    );
+    console.log(`  Updated rating stats for ${Object.keys(ratingMap).length} massage shop(s)`);
 
     // ── Summary ────────────────────────────────────────────────────────────
     console.log('\n─────────────────────────────────────────');
     console.log('Test data generation complete!');
     console.log(`  Users        : ${insertedUsers.length} (${userCount} regular + ${adminCount} admin)`);
     console.log(`  Massage shops: ${insertedMassages.length}`);
-    console.log(`  Reservations : ${insertedReservations.length}`);
+    console.log(`  Reservations : ${insertedReservations.length} (${ratedCount} pre-rated, ${insertedReservations.length - ratedCount} unrated)`);
     console.log(`  Password     : "${CONFIG.users.password}" (all generated users)`);
     console.log('─────────────────────────────────────────');
 

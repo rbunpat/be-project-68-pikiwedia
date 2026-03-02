@@ -1,6 +1,9 @@
 const User = require("../models/User");
 const sendTokenResponse = require("../lib/sendTokenResponse");
 
+//@desc     Login user
+//@route    POST /api/auth/login
+//@access   Public
 exports.login = async (req, res) => {
     try {
         const { email, password } = req.body;
@@ -34,6 +37,9 @@ exports.login = async (req, res) => {
     }
 }
 
+//@desc     Logout user
+//@route    GET /api/auth/logout
+//@access   Public
 exports.logout = (req, res) => {
     res.cookie("token", "null", {
         expires: new Date(Date.now() + 10 * 1000),
@@ -44,6 +50,9 @@ exports.logout = (req, res) => {
     });
 }
 
+//@desc     Get current logged in user
+//@route    GET /api/auth/me
+//@access   Private
 exports.getMe = async (req, res) => {
     try {
         const user = await User.findById(req.user.id);
@@ -59,7 +68,9 @@ exports.getMe = async (req, res) => {
         });
     }
 }
-
+//@desc     Register new user
+//@route    POST /api/auth/register
+//@access   Public
 exports.register = async (req, res) => {
     const { name, tel, email, password } = req.body;
     try {
@@ -74,6 +85,9 @@ exports.register = async (req, res) => {
     }
 };
 
+//@desc     Register new admin user
+//@route    POST /api/auth/register-admin
+//@access   Private (Admin)
 exports.registerAdmin = async (req, res) => {
     const { name, tel, email, password } = req.body;
     try {

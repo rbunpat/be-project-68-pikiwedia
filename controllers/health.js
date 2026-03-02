@@ -7,6 +7,9 @@ const DB_STATES = {
     3: "disconnecting"
 };
 
+//@desc     Check API and database health
+//@route    GET /api/health
+//@access   Public
 exports.getHealth = (req, res) => {
     const dbState = mongoose.connection.readyState;
     const dbStatus = DB_STATES[dbState] ?? "unknown";

@@ -46,6 +46,7 @@
           "price": { "type": "number", "example": 500 },
           "ratingSum": { "type": "number", "example": 45 },
           "userRatingCount": { "type": "number", "example": 10 },
+          "averageRating": { "type": "number", "example": 4.5 },
           "createdAt": { "type": "string", "format": "date-time" }
         }
       },
@@ -70,6 +71,8 @@
           "reserveDate": { "type": "string", "format": "date-time", "example": "2026-03-15T10:00:00.000Z" },
           "user": { "type": "string", "example": "64a1f2b3c4d5e6f7a8b9c0d1" },
           "Massage": { "type": "string", "example": "64a1f2b3c4d5e6f7a8b9c0d2" },
+          "rating": { "type": "integer", "minimum": 1, "maximum": 5, "example": 4 },
+          "isRated": { "type": "boolean", "example": false },
           "createdAt": { "type": "string", "format": "date-time" }
         }
       },
@@ -786,6 +789,61 @@
           "401": { "description": "Unauthorized - Not the reservation owner or admin" },
           "404": { "description": "Reservation not found" },
           "500": { "description": "Cannot delete Reservation" }
+        }
+      }
+    },
+    "/api/reservations/{id}/rate": {
+      "patch": {
+        "summary": "Rate a reservation (owner only, integer 1–5, one-time)",
+        "tags": ["Reservations"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "Reservation ID"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["rating"],
+                "properties": {
+                  "rating": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 5,
+                    "example": 4
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Reservation rated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": { "type": "boolean" },
+                    "data": { "$ref": "#/components/schemas/Reservation" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Invalid rating value or reservation already rated" },
+          "401": { "description": "Unauthorized - Not the reservation owner" },
+          "404": { "description": "Reservation not found" },
+          "500": { "description": "Cannot rate reservation" }
         }
       }
     }
