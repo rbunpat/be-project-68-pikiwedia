@@ -2,7 +2,7 @@ const Massage = require("../models/Massage");
 const Reservation = require("../models/Reservation");
 
 // @desc    Get all massages
-// @route   GET /api/v1/massages
+// @route   GET /api/massages
 // @access  Public
 exports.getMassages = async (req, res, next) => {
     try {
@@ -70,7 +70,7 @@ exports.getMassages = async (req, res, next) => {
 };
 
 // @desc    Get single massage
-// @route   GET /api/v1/massages/:id
+// @route   GET /api/massages/:id
 // @access  Public
 exports.getMassage = async (req, res, next) => {
     try {
@@ -87,7 +87,7 @@ exports.getMassage = async (req, res, next) => {
 };
 
 // @desc    Create new massage
-// @route   POST /api/v1/massages
+// @route   POST /api/massages
 // @access  Private (Admin)
 exports.createMassage = async (req, res, next) => {
     try {
@@ -99,7 +99,7 @@ exports.createMassage = async (req, res, next) => {
 };
 
 // @desc    Update massage
-// @route   PUT /api/v1/massages/:id
+// @route   PUT /api/massages/:id
 // @access  Private (Admin)
 exports.updateMassage = async (req, res, next) => {
     try {
@@ -118,7 +118,7 @@ exports.updateMassage = async (req, res, next) => {
 };
 
 // @desc    Delete massage
-// @route   DELETE /api/v1/massages/:id
+// @route   DELETE /api/massages/:id
 // @access  Private (Admin)
 exports.deleteMassage = async (req, res, next) => {
     try {

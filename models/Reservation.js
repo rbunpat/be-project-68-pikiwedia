@@ -16,6 +16,19 @@ const ReservationSchema = new mongoose.Schema({
         ref: 'Massage',
         required: true
     },
+    rating: {
+        type: Number,
+        min: [1, 'Rating must be at least 1'],
+        max: [5, 'Rating cannot exceed 5'],
+        validate: {
+            validator: Number.isInteger,
+            message: 'Rating must be a whole number'
+        }
+    },
+    isRated: {
+        type: Boolean,
+        default: false
+    },
     createdAt: {
         type: Date,
         default: Date.now

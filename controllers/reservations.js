@@ -2,8 +2,8 @@ const Reservation = require('../models/Reservation');
 const Massage = require('../models/Massage');
 
 //@desc     Get all reservations
-//@route    GET /api/v1/reservations
-//@access   Public
+//@route    GET /api/reservations
+//@access   Private
 exports.getReservations = async (req, res, next) =>{
     let query;
 
@@ -41,8 +41,8 @@ exports.getReservations = async (req, res, next) =>{
 };
 
 //@desc     Get single reservation
-//@route    GET /api/v1/reservation/:id
-//@access   Public
+//@route    GET /api/reservations/:id
+//@access   Private
 exports.getReservation = async (req, res, next) =>{
     try {
         const reservation = await Reservation.findById(req.params.id).populate({
@@ -62,7 +62,7 @@ exports.getReservation = async (req, res, next) =>{
 };
 
 //@desc     Add reservation
-//@route    POST /api/massage/:massageId/reservation
+//@route    POST /api/reservations
 //@access   Private
 exports.addReservation = async (req, res, next) =>{
     try {
@@ -91,7 +91,7 @@ exports.addReservation = async (req, res, next) =>{
 };
 
 //@desc     Update reservation
-//@route    PUT /api/reservation/:id
+//@route    PUT /api/reservations/:id
 //@access   Private
 exports.updateReservation = async (req, res, next) =>{
     try {
@@ -119,7 +119,7 @@ exports.updateReservation = async (req, res, next) =>{
 };
 
 //@desc     Delete reservation
-//@route    DELETE /api/reservation/:id
+//@route    DELETE /api/reservations/:id
 //@access   Private
 exports.deleteReservation = async (req, res, next) =>{
     try {
@@ -139,5 +139,55 @@ exports.deleteReservation = async (req, res, next) =>{
     } catch (error) {
         console.log(error);
         return res.status(500).json({success: false, message: "Cannot delete Reservation"});
+    }
+};
+
+//@desc     Rate a reservation
+//@route    PATCH /api/reservations/:id/rate
+//@access   Private (owner only)
+exports.rateReservation = async (req, res, next) => {
+    try {
+        const reservation = await Reservation.findById(req.params.id);
+
+        if (!reservation) {
+            return res.status(404).json({ success: false, message: `No reservation with the id of ${req.params.id}` });
+        }
+
+        // Only the reservation owner can rate
+        if (reservation.user.toString() !== req.user.id) {
+            return res.status(401).json({ success: false, message: `User ${req.user.id} is not authorized to rate this reservation` });
+        }
+
+        // Prevent double-rating
+        if (reservation.isRated) {
+            return res.status(400).json({ success: false, message: 'You have already rated this reservation' });
+        }
+
+        const { rating } = req.body;
+
+        if (!rating || !Number.isInteger(Number(rating)) || Number(rating) < 1 || Number(rating) > 5) {
+            return res.status(400).json({ success: false, message: 'Please provide a whole number rating between 1 and 5' });
+        }
+
+        const intRating = Number(rating);
+
+        // Update the reservation
+        reservation.rating = intRating;
+        reservation.isRated = true;
+        await reservation.save();
+
+        // Update the massage shop's rating stats
+        const massage = await Massage.findById(reservation.Massage);
+        if (massage) {
+            massage.ratingSum += intRating;
+            massage.userRatingCount += 1;
+            massage.averageRating = massage.ratingSum / massage.userRatingCount;
+            await massage.save();
+        }
+
+        res.status(200).json({ success: true, data: reservation });
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({ success: false, message: 'Cannot rate reservation' });
     }
 };

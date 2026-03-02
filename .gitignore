@@ -3,3 +3,5 @@ node_modules/*
 
 #ignore config
 config/config.env
+tests/api-tester.html
+tests/frontend.html
