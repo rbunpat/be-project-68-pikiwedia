@@ -47,7 +47,7 @@ exports.getReservation = async (req, res, next) =>{
     try {
         const reservation = await Reservation.findById(req.params.id).populate({
             path: 'massage',
-            select: 'name decription tel'
+            select: 'name province tel'
         });
 
         if(!reservation){
@@ -66,24 +66,28 @@ exports.getReservation = async (req, res, next) =>{
 //@access   Private
 exports.addReservation = async (req, res, next) =>{
     try {
-        req.body.massage = req.params.massageId;
+        const massageId = req.params.massageId || req.body.massage;
+        req.body.massage = massageId;
 
-        const massage = await Massage.findById(req.params.massageId);
+        const massage = await Massage.findById(massageId);
 
         if(!massage){
-            return res.status(400).json({success: false, message: `No Massage with the id of ${req.params.massageId}`});
+            return res.status(400).json({success: false, message: `No Massage with the id of ${massageId}`});
         }
 
         //add user Id to req.body
         req.body.user = req.user.id;
-        const existReservations = await Reservation.find({user: req.user.id});
+        const existReservations = await Reservation.find({
+            user: req.user.id,
+            reserveDate: { $gte: new Date() }
+        });
 
         if(existReservations.length >= 3 && req.user.role !== 'admin'){
             return res.status(400).json({success: false, message: `The user with ID ${req.user.id} has already made 3 reservations`});
         }
 
         const reservation = await Reservation.create(req.body);
-        res.status(200).json({success: true, data: reservation});
+        res.status(201).json({success: true, data: reservation});
     } catch (error) {
         console.log(error);
         return res.status(500).json({success: false, message: "Cannot create Reservations"});
@@ -106,7 +110,8 @@ exports.updateReservation = async (req, res, next) =>{
             return res.status(401).json({success: false, message: `User ${req.user.id} is not authorized this appointment`});
         }
 
-        reservation = await Reservation.findByIdAndUpdate(req.params.id, req.body, {
+        const allowedUpdates = { reserveDate: req.body.reserveDate };
+        reservation = await Reservation.findByIdAndUpdate(req.params.id, allowedUpdates, {
             new: true,
             runValidators: true
         });
@@ -177,7 +182,7 @@ exports.rateReservation = async (req, res, next) => {
         await reservation.save();
 
         // Update the massage shop's rating stats
-        const massage = await Massage.findById(reservation.Massage);
+        const massage = await Massage.findById(reservation.massage);
         if (massage) {
             massage.ratingSum += intRating;
             massage.userRatingCount += 1;

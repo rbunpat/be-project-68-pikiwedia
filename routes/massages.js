@@ -9,7 +9,8 @@ const router = express.Router();
 // auth middleware
 const { protect, authorize } = require('../middleware/auth');
 
-router.use('/:massageId/reservations', reservationRouter);
+// สร้าง Router
+const router = express.Router({ mergeParams: true });
 
 router.route('/').get(getMassages).post(protect, authorize('admin'), createMassage);
 router.route('/:id').get(getMassage).put(protect, authorize('admin'), updateMassage).delete(protect, authorize('admin'), deleteMassage);

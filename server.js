@@ -60,9 +60,9 @@ app.use(cookieParser());
 //Mount routers
 app.use("/api/health", healthRoutes);
 app.use("/api/auth", authRoutes);
-app.use("/api/reservations", reservations)
+app.use("/api/reservations", reservations);
 app.use('/api/massages', massages);
-
+app.use('/api/massages/:massageId/reservations', reservations);
 // Global 404 and 500 error handlers
 app.use((req, res, next) => {
     res.status(404).json({

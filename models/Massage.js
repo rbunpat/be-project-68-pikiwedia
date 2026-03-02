@@ -29,9 +29,9 @@ const MassageSchema = new mongoose.Schema({
         type: String,
         required: [true, 'Please add a telephone number']
     },
-    picture: {
-        type: String,
-        default: 'https://placehold.co/600x400/EEE/31343C?font=source-sans-pro&text=No%20Image'
+    pictures: {
+        type: [String],
+        default: []
     },
     price: {
         type: Number,

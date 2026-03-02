@@ -1,5 +1,4 @@
 const Massage = require("../models/Massage");
-const Reservation = require("../models/Reservation");
 
 // @desc    Get all massages
 // @route   GET /api/massages
@@ -42,7 +41,7 @@ exports.getMassages = async (req, res, next) => {
         const limit = parseInt(req.query.limit, 10) || 25;
         const startIndex = (page - 1) * limit;
         const endIndex = page * limit;
-        const total = await Massage.countDocuments();
+        const total = await Massage.countDocuments(JSON.parse(queryStr));
 
         query = query.skip(startIndex).limit(limit);
 
@@ -65,7 +64,7 @@ exports.getMassages = async (req, res, next) => {
             data: massages
         });
     } catch (err) {
-        res.status(400).json({ success: false });
+        res.status(500).json({ success: false, message: err.message });
     }
 };
 
@@ -82,7 +81,7 @@ exports.getMassage = async (req, res, next) => {
 
         res.status(200).json({ success: true, data: massage });
     } catch (err) {
-        res.status(400).json({ success: false });
+        res.status(500).json({ success: false, message: err.message });
     }
 };
 
@@ -109,11 +108,11 @@ exports.updateMassage = async (req, res, next) => {
         });
 
         if (!massage) {
-            return res.status(400).json({ success: false });
+            return res.status(404).json({ success: false, message: `No massage shop with id ${req.params.id}` });
         }
         res.status(200).json({ success: true, data: massage });
     } catch (err) {
-        res.status(400).json({ success: false });
+        res.status(500).json({ success: false, message: err.message });
     }
 };
 
@@ -128,12 +127,11 @@ exports.deleteMassage = async (req, res, next) => {
             return res.status(404).json({ success: false, message: `No massage shop with id ${req.params.id}` });
         }
 
-        // ลบรายการจอง (Reservations) ที่เกี่ยวข้องกับร้านนี้ทั้งหมดก่อนลบร้าน
-        await Reservation.deleteMany({ massage: req.params.id });
+        // cascade delete is handled by the pre('deleteOne') hook on MassageSchema
         await massage.deleteOne();
 
         res.status(200).json({ success: true, data: {} });
     } catch (err) {
-        res.status(400).json({ success: false });
+        res.status(500).json({ success: false, message: err.message });
     }
 };

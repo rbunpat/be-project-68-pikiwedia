@@ -41,8 +41,8 @@ exports.login = async (req, res) => {
 //@route    GET /api/auth/logout
 //@access   Public
 exports.logout = (req, res) => {
-    res.cookie("token", "null", {
-        expires: new Date(Date.now() + 10 * 1000),
+    res.cookie("token", "none", {
+        expires: new Date(0),
         httpOnly: true
     }).json({
         success: true,

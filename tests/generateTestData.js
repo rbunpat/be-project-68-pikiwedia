@@ -99,6 +99,10 @@ function buildMassages(count) {
         } while (usedNames.has(name));
         usedNames.add(name);
 
+        const picCount = faker.number.int({ min: 1, max: 3 });
+        const pictures = Array.from({ length: picCount }, (_, i) =>
+            `https://picsum.photos/seed/${encodeURIComponent(name)}-${i}/600/400`
+        );
         return {
             name,
             address: faker.location.streetAddress(),
@@ -107,6 +111,7 @@ function buildMassages(count) {
             postalcode: generatePostalCode(),
             tel: generateTel(),
             price: faker.number.int({ min: 200, max: 3000 }),
+            pictures,
             ratingSum: 0,
             userRatingCount: 0,
             averageRating: 0
@@ -132,7 +137,7 @@ function buildReservations(users, massages, count) {
         return {
             reserveDate,
             user:    pick(users)._id,
-            Massage: pick(massages)._id,  // capital M — matches ReservationSchema
+            massage: pick(massages)._id,
             ...(isRated && { rating, isRated: true })
         };
     });
@@ -195,7 +200,7 @@ async function main() {
     const ratingMap = {};
     reservationDocs.forEach(r => {
         if (!r.isRated) return;
-        const id = r.Massage.toString();
+        const id = r.massage.toString();
         if (!ratingMap[id]) ratingMap[id] = { sum: 0, count: 0 };
         ratingMap[id].sum   += r.rating;
         ratingMap[id].count += 1;

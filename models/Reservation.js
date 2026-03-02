@@ -1,5 +1,4 @@
 const mongoose = require('mongoose');
-const Massage = require('./Massage');
 
 const ReservationSchema = new mongoose.Schema({
     reserveDate: {
@@ -11,7 +10,7 @@ const ReservationSchema = new mongoose.Schema({
         ref: 'User',
         required: true
     },
-    Massage: {
+    massage: {
         type: mongoose.Schema.ObjectId,
         ref: 'Massage',
         required: true
