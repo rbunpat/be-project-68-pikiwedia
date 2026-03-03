@@ -4,51 +4,49 @@ const Massage = require("../models/Massage");
 // @route   GET /api/massages
 // @access  Public
 exports.getMassages = async (req, res, next) => {
+    let query;
+
+    // Copy req.query
+    const reqQuery = { ...req.query };
+
+    // Remove fields from req.query
+    const removeFields = ['select', 'sort', 'page', 'limit'];
+    removeFields.forEach(param => delete reqQuery[param]);
+
+    // Create query string for operator (gt, gte, lt, lte, in)
+    let queryStr = JSON.stringify(reqQuery);
+    queryStr = queryStr.replace(/\b(gt|gte|lt|lte|in)\b/g, match => `$${match}`);
+
+    query = Massage.find(JSON.parse(queryStr));
+
+    // Select Fields
+    if (req.query.select) {
+        const fields = req.query.select.split(',').join(' ');
+        query = query.select(fields);
+    }
+
+    // Sorting Logic
+    if (req.query.sort) {
+        const sortBy = req.query.sort.split(',').join(' ');
+        query = query.sort(sortBy);
+    } else {
+        query = query.sort('-createdAt');
+    }
+
+    // Pagination Logic
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 25;
+    const startIndex = (page - 1) * limit;
+    const endIndex = page * limit;
+
     try {
-        let query;
-
-        // 1. Copy req.query
-        const reqQuery = { ...req.query };
-
-        // 2. ฟิลด์ที่ต้องแยกออกมาเพื่อทำ Logic เฉพาะ (ไม่ใช่การ Filter ข้อมูล)
-        const removeFields = ['select', 'sort', 'page', 'limit'];
-        removeFields.forEach(param => delete reqQuery[param]);
-
-        // 3. สร้าง Query String สำหรับรองรับ Operator (gt, gte, lt, lte, in)
-        let queryStr = JSON.stringify(reqQuery);
-        queryStr = queryStr.replace(/\b(gt|gte|lt|lte|in)\b/g, match => `$${match}`);
-
-        // 4. ค้นหาข้อมูลพื้นฐาน (รองรับการทำ Virtual Populate ไปยัง Reservations)
-        query = Massage.find(JSON.parse(queryStr));
-
-        // 5. Select Fields (เลือกเฉพาะคอลัมน์ที่ต้องการ)
-        if (req.query.select) {
-            const fields = req.query.select.split(',').join(' ');
-            query = query.select(fields);
-        }
-
-        // 6. Sorting Logic
-        if (req.query.sort) {
-            const sortBy = req.query.sort.split(',').join(' ');
-            query = query.sort(sortBy);
-        } else {
-            // เรียงลำดับตามวันที่สร้างล่าสุดเป็นค่าเริ่มต้น
-            query = query.sort('-createdAt');
-        }
-
-        // 7. Pagination Logic
-        const page = parseInt(req.query.page, 10) || 1;
-        const limit = parseInt(req.query.limit, 10) || 25;
-        const startIndex = (page - 1) * limit;
-        const endIndex = page * limit;
-        const total = await Massage.countDocuments(JSON.parse(queryStr));
-
+        const total = await Massage.countDocuments();
         query = query.skip(startIndex).limit(limit);
 
-        // 8. Execute Query
+        // Execute Query
         const massages = await query;
 
-        // 9. Pagination result (บอกว่ามีหน้าก่อนหน้า หรือหน้าถัดไปไหม)
+        // Pagination result
         const pagination = {};
         if (endIndex < total) {
             pagination.next = { page: page + 1, limit };

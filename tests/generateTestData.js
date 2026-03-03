@@ -38,11 +38,11 @@ const CONFIG = {
 process.argv.slice(2).forEach(arg => {
     const [key, value] = arg.replace(/^--/, '').split('=');
     switch (key) {
-        case 'users':        CONFIG.users.count           = parseInt(value); break;
-        case 'admins':       CONFIG.users.adminCount      = parseInt(value); break;
-        case 'massages':     CONFIG.massages.count        = parseInt(value); break;
-        case 'reservations': CONFIG.reservations.count    = parseInt(value); break;
-        case 'clear':        CONFIG.clearExisting         = value !== 'false'; break;
+        case 'users': CONFIG.users.count = parseInt(value); break;
+        case 'admins': CONFIG.users.adminCount = parseInt(value); break;
+        case 'massages': CONFIG.massages.count = parseInt(value); break;
+        case 'reservations': CONFIG.reservations.count = parseInt(value); break;
+        case 'clear': CONFIG.clearExisting = value !== 'false'; break;
     }
 });
 
@@ -137,11 +137,11 @@ function buildReservations(users, massages, count) {
         reserveDate.setDate(reserveDate.getDate() + offsetDays);
 
         const isRated = Math.random() < ratedRatio;
-        const rating  = isRated ? faker.number.int({ min: 1, max: 5 }) : undefined;
+        const rating = isRated ? faker.number.int({ min: 1, max: 5 }) : undefined;
 
         return {
             reserveDate,
-            user:    pick(users)._id,
+            user: pick(users)._id,
             massage: pick(massages)._id,
             ...(isRated && { rating, isRated: true })
         };
@@ -207,16 +207,16 @@ async function main() {
         if (!r.isRated) return;
         const id = r.massage.toString();
         if (!ratingMap[id]) ratingMap[id] = { sum: 0, count: 0 };
-        ratingMap[id].sum   += r.rating;
+        ratingMap[id].sum += r.rating;
         ratingMap[id].count += 1;
     });
 
     await Promise.all(
         Object.entries(ratingMap).map(([massageId, { sum, count }]) =>
             Massage.findByIdAndUpdate(massageId, {
-                ratingSum:       sum,
+                ratingSum: sum,
                 userRatingCount: count,
-                averageRating:   sum / count
+                averageRating: sum / count
             })
         )
     );

@@ -4,25 +4,25 @@ const Massage = require('../models/Massage');
 //@desc     Get all reservations
 //@route    GET /api/reservations
 //@access   Private
-exports.getReservations = async (req, res, next) =>{
+exports.getReservations = async (req, res, next) => {
     let query;
 
-    if(req.user.role !== 'admin'){
-        query = Reservation.find({user: req.user.id}).populate({
+    if (req.user.role !== 'admin') {
+        query = Reservation.find({ user: req.user.id }).populate({
             path: 'massage',
             select: 'name province tel'
         });
     }
-    else{
-        if(req.params.massageId){
+    else {
+        if (req.params.massageId) {
             console.log(req.params.massageId);
 
-            query = Reservation.find({massage: req.params.massageId}).populate({
+            query = Reservation.find({ massage: req.params.massageId }).populate({
                 path: 'massage',
                 select: 'name province tel'
             });
         }
-        else{
+        else {
             query = Reservation.find().populate({
                 path: 'massage',
                 select: 'name province tel'
@@ -30,41 +30,66 @@ exports.getReservations = async (req, res, next) =>{
         }
     }
 
+    //Pagination
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 25;
+    const startIndex = (page - 1) * limit;
+    const endIndex = page * limit;
+
     try {
+        const total = await Reservation.countDocuments();
+        query = query.skip(startIndex).limit(limit);
+
         const reservations = await query;
 
-        res.status(200).json({success: true, count: reservations.length, data: reservations});
+        const pagination = {};
+
+        if (endIndex < total) {
+            pagination.next = {
+                page: page + 1,
+                limit
+            }
+        }
+
+        if (startIndex > 0) {
+            pagination.prev = {
+                page: page - 1,
+                limit
+            }
+        }
+
+        res.status(200).json({ success: true, count: reservations.length, pagination, data: reservations });
     } catch (error) {
         console.log(error);
-        return res.status(500).json({success: false, message: "Cannot find Reservation"});
+        return res.status(500).json({ success: false, message: "Cannot find Reservation" });
     }
 };
 
 //@desc     Get single reservation
 //@route    GET /api/reservations/:id
 //@access   Private
-exports.getReservation = async (req, res, next) =>{
+exports.getReservation = async (req, res, next) => {
     try {
         const reservation = await Reservation.findById(req.params.id).populate({
             path: 'massage',
             select: 'name province tel'
         });
 
-        if(!reservation){
-            return res.status(400).json({success: false, message: `No reservation with the id of ${req.params.id}`});
+        if (!reservation) {
+            return res.status(400).json({ success: false, message: `No reservation with the id of ${req.params.id}` });
         }
 
-        res.status(200).json({success: true, data: reservation});
+        res.status(200).json({ success: true, data: reservation });
     } catch (error) {
         console.log(error);
-        return res.status(500).json({success: false, message: "Cannot find Reservation"});
+        return res.status(500).json({ success: false, message: "Cannot find Reservation" });
     }
 };
 
 //@desc     Add reservation
 //@route    POST /api/reservations
 //@access   Private
-exports.addReservation = async (req, res, next) =>{
+exports.addReservation = async (req, res, next) => {
     try {
         const massageId = req.params.massageId || req.body.massage;
         req.body.massage = massageId;
@@ -78,43 +103,40 @@ exports.addReservation = async (req, res, next) =>{
 
         const massage = await Massage.findById(massageId);
 
-        if(!massage){
-            return res.status(400).json({success: false, message: `No Massage with the id of ${massageId}`});
+        if (!massage) {
+            return res.status(400).json({ success: false, message: `No Massage with the id of ${req.params.massageId}` });
         }
 
         //add user Id to req.body
         req.body.user = req.user.id;
-        const existReservations = await Reservation.find({
-            user: req.user.id,
-            reserveDate: { $gte: new Date() }
-        });
+        const existReservations = await Reservation.find({ user: req.user.id });
 
-        if(existReservations.length >= 3 && req.user.role !== 'admin'){
-            return res.status(400).json({success: false, message: `The user with ID ${req.user.id} has already made 3 reservations`});
+        if (existReservations.length >= 3 && req.user.role !== 'admin') {
+            return res.status(400).json({ success: false, message: `The user with ID ${req.user.id} has already made 3 reservations` });
         }
 
         const reservation = await Reservation.create(req.body);
-        res.status(201).json({success: true, data: reservation});
+        res.status(200).json({ success: true, data: reservation });
     } catch (error) {
         console.log(error);
-        return res.status(500).json({success: false, message: "Cannot create Reservations"});
+        return res.status(500).json({ success: false, message: "Cannot create Reservations" });
     }
 };
 
 //@desc     Update reservation
 //@route    PUT /api/reservations/:id
 //@access   Private
-exports.updateReservation = async (req, res, next) =>{
+exports.updateReservation = async (req, res, next) => {
     try {
         let reservation = await Reservation.findById(req.params.id);
 
-        if(!reservation){
-            return res.status(404).json({success: false, message: `No reservation with the id of ${req.params.id}`});
+        if (!reservation) {
+            return res.status(404).json({ success: false, message: `No reservation with the id of ${req.params.id}` });
         }
 
         //Make sure user id the reservation owner
-        if(reservation.user.toString() !== req.user.id && req.user.role !== 'admin'){
-            return res.status(401).json({success: false, message: `User ${req.user.id} is not authorized this appointment`});
+        if (reservation.user.toString() !== req.user.id && req.user.role !== 'admin') {
+            return res.status(401).json({ success: false, message: `User ${req.user.id} is not authorized this appointment` });
         }
 
         const allowedUpdates = {};
@@ -131,34 +153,34 @@ exports.updateReservation = async (req, res, next) =>{
             runValidators: true
         });
 
-        res.status(200).json({success: true, data: reservation});
+        res.status(200).json({ success: true, data: reservation });
     } catch (error) {
         console.log(error);
-        return res.status(500).json({success: false, message: "Cannot update Reservation"});
+        return res.status(500).json({ success: false, message: "Cannot update Reservation" });
     }
 };
 
 //@desc     Delete reservation
 //@route    DELETE /api/reservations/:id
 //@access   Private
-exports.deleteReservation = async (req, res, next) =>{
+exports.deleteReservation = async (req, res, next) => {
     try {
         const reservation = await Reservation.findById(req.params.id);
 
-        if(!reservation){
-            return res.status(404).json({success: false, message: `No reservation with the id of ${req.params.id}`});
+        if (!reservation) {
+            return res.status(404).json({ success: false, message: `No reservation with the id of ${req.params.id}` });
         }
 
         //Make sure user id the reservation owner
-        if(reservation.user.toString() !== req.user.id && req.user.role !== 'admin'){
-            return res.status(401).json({success: false, message: `User ${req.user.id} is not authorized this appointment`});
+        if (reservation.user.toString() !== req.user.id && req.user.role !== 'admin') {
+            return res.status(401).json({ success: false, message: `User ${req.user.id} is not authorized this appointment` });
         }
 
         await reservation.deleteOne();
-        res.status(200).json({success: true, data: {}});
+        res.status(200).json({ success: true, data: {} });
     } catch (error) {
         console.log(error);
-        return res.status(500).json({success: false, message: "Cannot delete Reservation"});
+        return res.status(500).json({ success: false, message: "Cannot delete Reservation" });
     }
 };
 
@@ -191,19 +213,10 @@ exports.rateReservation = async (req, res, next) => {
 
         const intRating = Number(rating);
 
-        // Update the reservation
+        // Update the reservation (stats logic is handled via Mongoose post hooks)
         reservation.rating = intRating;
         reservation.isRated = true;
         await reservation.save();
-
-        // Update the massage shop's rating stats
-        const massage = await Massage.findById(reservation.massage);
-        if (massage) {
-            massage.ratingSum += intRating;
-            massage.userRatingCount += 1;
-            massage.averageRating = massage.ratingSum / massage.userRatingCount;
-            await massage.save();
-        }
 
         res.status(200).json({ success: true, data: reservation });
     } catch (error) {
