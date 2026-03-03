@@ -71,10 +71,9 @@ MassageSchema.virtual('reservations', {
 });
 
 // Cascade delete: ถ้าลบร้านนวด (Massage) ให้ลบการจอง (Reservation) ที่ผูกกับร้านนี้ทิ้งให้หมด
-MassageSchema.pre('deleteOne', { document: true, query: false }, async function (next) {
+MassageSchema.pre('deleteOne', { document: true, query: false }, async function () {
     console.log(`Reservations being removed from massage shop ${this._id}`);
     await this.model('Reservation').deleteMany({ massage: this._id });
-    next();
 });
 
 module.exports = mongoose.model('Massage', MassageSchema);

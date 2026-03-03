@@ -16,7 +16,9 @@
   "main": "server.js",
   "scripts": {
     "test": "newman run \"tests/test.json\"",
-    "dev": "nodemon server.js"
+    "dev": "nodemon server.js",
+    "generate-data-clear": "node tests/generateTestData.js --users=20 --admins=1 --massages=30 --reservations=50 --clear=true",
+    "generate-data": "node tests/generateTestData.js --users=20 --admins=1 --massages=30 --reservations=50 --clear=false"
   },
   "dependencies": {
     "@exortek/express-mongo-sanitize": "^1.1.1",

@@ -83,9 +83,11 @@ async function buildUsers(count, role) {
     return Array.from({ length: count }, (_, i) => ({
         name: faker.person.fullName(),
         tel: generateTel(),
-        // First admin always uses a fixed, predictable email
+        // First admin / first regular user always uses a fixed, predictable email
         email: (role === 'admin' && i === 0)
             ? 'admin@example.com'
+            : (role === 'user' && i === 0)
+            ? 'user@example.com'
             : faker.internet.email({ provider: 'example.com' }).toLowerCase(),
         password: hashedPassword,
         role
@@ -227,6 +229,7 @@ async function main() {
     console.log(`  Massage shops: ${insertedMassages.length}`);
     console.log(`  Reservations : ${insertedReservations.length} (${ratedCount} pre-rated, ${insertedReservations.length - ratedCount} unrated)`);
     console.log(`  Password     : "${CONFIG.users.password}" (all generated users)`);
+    console.log(`  Fixed emails : admin@example.com (admin) | user@example.com (user)`);
     console.log('─────────────────────────────────────────');
 
     process.exit(0);
