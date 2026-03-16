@@ -19,7 +19,7 @@ const swaggerUi = require("swagger-ui-express");
 const swaggerSpec = require("./config/swagger");
 
 //Load env vars
-dotenv.config({ path: "./config/config.env" });
+dotenv.config({ path: ".env" });
 
 //Connect to database
 connectDB();
