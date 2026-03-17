@@ -50,7 +50,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(limiter);
 
 //Prevent parameter pollution
-app.use(hpp());
+// app.use(hpp());
 
 //Enable CORS
 app.use(cors());
