@@ -10,7 +10,7 @@ const connectDB = require("./config/db");
 //Security middleware
 const expressMongoSanitize = require("@exortek/express-mongo-sanitize");
 const helmet = require("helmet");
-const { xss } = require("express-xss-sanitizer");
+// const { xss } = require("express-xss-sanitizer");
 const limiter = require("./middleware/rateLimiter");
 const hpp = require("hpp");
 const cors = require("cors");
@@ -44,7 +44,7 @@ app.use(expressMongoSanitize());
 app.use(express.urlencoded({ extended: true }));
 
 //Prevent XSS
-app.use(xss());
+// app.use(xss());
 
 //Rate limiting
 app.use(limiter);
